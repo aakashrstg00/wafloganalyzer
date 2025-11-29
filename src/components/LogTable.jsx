@@ -7,7 +7,7 @@ const LogTable = ({ logs, visibleColumns, sortConfig, onSort, groupBy, useHumanT
     const [expandedGroups, setExpandedGroups] = useState({});
     const [expandedRows, setExpandedRows] = useState({});
     const [page, setPage] = useState(1);
-    const pageSize = 50;
+    const pageSize = 100;
 
     // Check if there are no results
     if (!logs || logs.length === 0) {
@@ -48,6 +48,22 @@ const LogTable = ({ logs, visibleColumns, sortConfig, onSort, groupBy, useHumanT
 
         if (value === undefined || value === null || value === '') {
             return '-';
+        }
+
+        // Special handling for action column
+        if (column === 'action') {
+            const actionValue = String(value).toUpperCase();
+            let pillClass = 'action-pill';
+
+            if (actionValue === 'ALLOW') {
+                pillClass += ' action-allow';
+            } else if (actionValue === 'BLOCK') {
+                pillClass += ' action-block';
+            } else {
+                pillClass += ' action-other';
+            }
+
+            return <span className={pillClass}>{value}</span>;
         }
 
         if (column === 'timestamp' && useHumanTime) {

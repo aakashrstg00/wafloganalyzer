@@ -12,10 +12,13 @@ const Controls = ({
     setVisibleColumns,
     useHumanTime,
     setUseHumanTime,
-    onAddCustomHeader
+    onAddCustomHeader,
+    timeRange,
+    setTimeRange
 }) => {
     const [showFilters, setShowFilters] = useState(false);
     const [showColumns, setShowColumns] = useState(false);
+    const [showTimeRange, setShowTimeRange] = useState(false);
 
     const addFilter = () => {
         setFilters([...filters, { field: allPaths[0], operator: 'equals', value: '' }]);
@@ -71,6 +74,13 @@ const Controls = ({
                             onClick={() => setShowColumns(!showColumns)}
                         >
                             <Settings size={16} /> Columns
+                        </button>
+
+                        <button
+                            className={`btn ${showTimeRange ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setShowTimeRange(!showTimeRange)}
+                        >
+                            <Clock size={16} /> Time Range
                         </button>
 
                         <button
@@ -186,6 +196,37 @@ const Controls = ({
                                 {path}
                             </label>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {showTimeRange && (
+                <div className="time-range-panel animate-fade-in">
+                    <div className="time-range-inputs">
+                        <div className="time-input-group">
+                            <label className="label">Start Time</label>
+                            <input
+                                type="datetime-local"
+                                className="input"
+                                value={timeRange.start || ''}
+                                onChange={(e) => setTimeRange({ ...timeRange, start: e.target.value })}
+                            />
+                        </div>
+                        <div className="time-input-group">
+                            <label className="label">End Time</label>
+                            <input
+                                type="datetime-local"
+                                className="input"
+                                value={timeRange.end || ''}
+                                onChange={(e) => setTimeRange({ ...timeRange, end: e.target.value })}
+                            />
+                        </div>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => setTimeRange({ start: '', end: '' })}
+                        >
+                            <X size={12} />
+                        </button>
                     </div>
                 </div>
             )}

@@ -20,6 +20,7 @@ function App() {
   const [useHumanTime, setUseHumanTime] = useState(false);
   const [customHeaders, setCustomHeaders] = useState([]);
   const [pendingHeader, setPendingHeader] = useState(null);
+  const [timeRange, setTimeRange] = useState({ start: '', end: '' });
 
   const handleFileUpload = (uploadedLogs, name) => {
     setRawLogs(uploadedLogs);
@@ -117,12 +118,41 @@ function App() {
   const processedLogs = useMemo(() => {
     let result = filterLogs(logs, filters);
 
+    // Apply time range filter
+    if (timeRange.start || timeRange.end) {
+      result = result.filter(log => {
+        const timestamp = log.timestamp;
+        if (!timestamp) return true; // Keep logs without timestamp
+
+        // Convert timestamp to milliseconds if needed
+        let ts = Number(timestamp);
+        // If timestamp is in seconds (10 digits or less), convert to milliseconds
+        if (ts < 10000000000) ts *= 1000;
+
+        if (timeRange.start) {
+          // Parse the datetime-local input as UTC
+          const startDateUTC = new Date(timeRange.start + 'Z'); // Append 'Z' to treat as UTC
+          const startTime = startDateUTC.getTime();
+          if (ts < startTime) return false;
+        }
+
+        if (timeRange.end) {
+          // Parse the datetime-local input as UTC
+          const endDateUTC = new Date(timeRange.end + 'Z'); // Append 'Z' to treat as UTC
+          const endTime = endDateUTC.getTime();
+          if (ts > endTime) return false;
+        }
+
+        return true;
+      });
+    }
+
     if (sortConfig.field) {
       result = sortLogs(result, sortConfig.field, sortConfig.direction);
     }
 
     return result;
-  }, [logs, filters, sortConfig]);
+  }, [logs, filters, sortConfig, timeRange]);
 
   const handleSort = (field) => {
     setSortConfig(prev => ({
@@ -169,6 +199,8 @@ function App() {
               useHumanTime={useHumanTime}
               setUseHumanTime={setUseHumanTime}
               onAddCustomHeader={addCustomHeader}
+              timeRange={timeRange}
+              setTimeRange={setTimeRange}
             />
 
             <LogTable
