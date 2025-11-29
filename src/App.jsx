@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import FileUpload from './components/FileUpload';
 import LogTable from './components/LogTable';
 import Controls from './components/Controls';
+import Shortcuts from './components/Shortcuts';
 import { getAllPaths, filterLogs, sortLogs, enrichLogs } from './utils/logHelpers';
 import { Shield, Activity } from 'lucide-react';
 import './App.css';
@@ -73,7 +74,19 @@ function App() {
       });
 
       if (matchingPath && !visibleColumns.includes(matchingPath)) {
-        setVisibleColumns(prev => [...prev, matchingPath]);
+        // Insert right after timestamp column
+        setVisibleColumns(prev => {
+          const timestampIndex = prev.indexOf('timestamp');
+          if (timestampIndex !== -1) {
+            // Insert after timestamp
+            const newColumns = [...prev];
+            newColumns.splice(timestampIndex + 1, 0, matchingPath);
+            return newColumns;
+          } else {
+            // If no timestamp, add at the beginning
+            return [matchingPath, ...prev];
+          }
+        });
         setPendingHeader(null);
       }
     }
@@ -84,6 +97,21 @@ function App() {
       setCustomHeaders([...customHeaders, headerName]);
       setPendingHeader(headerName);
     }
+  };
+
+  const handleApplyShortcut = (shortcut) => {
+    // Apply the groupBy
+    setGroupBy(shortcut.groupBy);
+
+    // Apply filters if any
+    if (shortcut.filters && shortcut.filters.length > 0) {
+      setFilters(shortcut.filters);
+    } else {
+      setFilters([]);
+    }
+
+    // Note: The limit is handled by the grouping display in LogTable
+    // We could add a separate limit state if needed
   };
 
   const processedLogs = useMemo(() => {
@@ -125,6 +153,11 @@ function App() {
           <FileUpload onFileUpload={handleFileUpload} />
         ) : (
           <div className="dashboard animate-fade-in">
+            <Shortcuts
+              allPaths={allPaths}
+              onApplyShortcut={handleApplyShortcut}
+            />
+
             <Controls
               allPaths={allPaths}
               filters={filters}

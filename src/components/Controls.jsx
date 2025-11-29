@@ -110,6 +110,17 @@ const Controls = ({
                         </button>
                     </div>
 
+                    <button
+                        className="btn btn-secondary clear-all-btn"
+                        onClick={() => {
+                            setFilters([]);
+                            setGroupBy(null);
+                        }}
+                        title="Clear all filters and grouping"
+                    >
+                        <X size={16} /> Clear filters
+                    </button>
+
                 </div>
             </div>
 

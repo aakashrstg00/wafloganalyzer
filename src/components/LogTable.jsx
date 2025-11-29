@@ -9,6 +9,22 @@ const LogTable = ({ logs, visibleColumns, sortConfig, onSort, groupBy, useHumanT
     const [page, setPage] = useState(1);
     const pageSize = 50;
 
+    // Check if there are no results
+    if (!logs || logs.length === 0) {
+        return (
+            <div className="log-table-container card">
+                <div className="no-results">
+                    <div className="no-results-icon">📊</div>
+                    <h3 className="no-results-title">No Results Found</h3>
+                    <p className="no-results-message">
+                        No log entries match the current filters or search criteria.
+                        Try adjusting your filters or uploading a different log file.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     // Pagination for flat list
     const paginatedLogs = logs.slice((page - 1) * pageSize, page * pageSize);
     const totalPages = Math.ceil(logs.length / pageSize);
@@ -69,7 +85,11 @@ const LogTable = ({ logs, visibleColumns, sortConfig, onSort, groupBy, useHumanT
         // Actually, sorting should happen before grouping usually, or sort groups?
         // Let's group here.
         const grouped = _.groupBy(logs, (log) => _.get(log, groupBy) || 'Undefined');
-        const groupKeys = Object.keys(grouped).sort();
+
+        // Sort group keys by count (descending) instead of alphabetically
+        const groupKeys = Object.keys(grouped).sort((a, b) => {
+            return grouped[b].length - grouped[a].length;
+        });
 
         return (
             <div className="log-table-container">

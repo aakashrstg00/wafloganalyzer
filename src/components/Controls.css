@@ -115,3 +115,7 @@
 .input {
     width: 216px;
 }
+
+.clear-all-btn {
+    margin-left: 1rem;
+}
