@@ -1,0 +1,149 @@
+.log-table-container {
+    overflow: hidden;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    text-align: left;
+}
+
+.log-table th,
+.log-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.log-table thead {
+    font-weight: bold !important;
+}
+
+.log-table th {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    user-select: none;
+}
+
+.sortable-header {
+    cursor: pointer;
+}
+
+.sortable-header:hover {
+    color: var(--text-primary);
+    background-color: #475569;
+}
+
+.th-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.log-table tr:hover td {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.toggle-cell {
+    cursor: pointer;
+    width: 40px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.toggle-cell:hover {
+    color: var(--accent-primary);
+}
+
+.detail-row td {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 1rem;
+    white-space: pre-wrap;
+}
+
+.json-detail {
+    margin: 0;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.page-info {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+/* Group Styles */
+.groups-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.group-item {
+    padding: 0;
+    overflow: hidden;
+}
+
+.group-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    cursor: pointer;
+    background-color: var(--bg-secondary);
+    transition: background-color 0.2s;
+}
+
+.group-header:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.group-title {
+    display: flex;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.group-key {
+    color: var(--text-secondary);
+}
+
+.group-value {
+    color: var(--accent-primary);
+}
+
+.badge {
+    background-color: var(--bg-primary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-left: auto;
+    border: 1px solid var(--border-color);
+}
+
+.group-content {
+    border-top: 1px solid var(--border-color);
+}
