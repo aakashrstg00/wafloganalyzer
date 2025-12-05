@@ -13,7 +13,7 @@
 }
 
 .shortcuts-header:hover {
-    background-color: var(--bg-tertiary);
+    /* background-color: var(--bg-tertiary); */
 }
 
 .shortcuts-title {

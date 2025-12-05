@@ -4,7 +4,7 @@ import LogTable from './components/LogTable';
 import Controls from './components/Controls';
 import Shortcuts from './components/Shortcuts';
 import { getAllPaths, filterLogs, sortLogs, enrichLogs } from './utils/logHelpers';
-import { Shield, Activity } from 'lucide-react';
+import { Shield, Activity, Sun, Moon } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -21,6 +21,16 @@ function App() {
   const [customHeaders, setCustomHeaders] = useState([]);
   const [pendingHeader, setPendingHeader] = useState(null);
   const [timeRange, setTimeRange] = useState({ start: '', end: '' });
+  const [theme, setTheme] = useState('dark');
+
+  // Apply theme to document
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   const handleFileUpload = (uploadedLogs, name) => {
     setRawLogs(uploadedLogs);
@@ -100,6 +110,10 @@ function App() {
     }
   };
 
+  const removeCustomHeader = (headerName) => {
+    setCustomHeaders(customHeaders.filter(h => h !== headerName));
+  };
+
   const handleApplyShortcut = (shortcut) => {
     // Apply the groupBy
     setGroupBy(shortcut.groupBy);
@@ -169,12 +183,21 @@ function App() {
             <Shield size={32} className="logo-icon" />
             <h1>WAF Log Analyzer</h1>
           </div>
-          {fileName && (
-            <div className="file-info badge">
-              <Activity size={14} />
-              {fileName} ({logs.length} entries)
-            </div>
-          )}
+          <div className="header-actions">
+            {fileName && (
+              <div className="file-info badge">
+                <Activity size={14} />
+                {fileName} ({logs.length} entries)
+              </div>
+            )}
+            <button
+              className="btn btn-secondary btn-icon-only"
+              onClick={toggleTheme}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -201,6 +224,8 @@ function App() {
               onAddCustomHeader={addCustomHeader}
               timeRange={timeRange}
               setTimeRange={setTimeRange}
+              customHeaders={customHeaders}
+              onRemoveCustomHeader={removeCustomHeader}
             />
 
             <LogTable

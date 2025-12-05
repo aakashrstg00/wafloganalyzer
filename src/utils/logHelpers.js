@@ -123,6 +123,8 @@ export const filterLogs = (logs, filters) => {
                     return Number(logValue) < Number(value);
                 case 'exists':
                     return logValue !== undefined && logValue !== null;
+                case 'isNotEmpty':
+                    return logValue !== undefined && logValue !== null && logValue !== '' && logValue !== '-';
                 default:
                     return true;
             }
