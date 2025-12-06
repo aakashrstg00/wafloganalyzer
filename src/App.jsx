@@ -3,13 +3,14 @@ import FileUpload from './components/FileUpload';
 import LogTable from './components/LogTable';
 import Controls from './components/Controls';
 import Shortcuts from './components/Shortcuts';
-import { getAllPaths, filterLogs, sortLogs, enrichLogs } from './utils/logHelpers';
 import { Shield, Activity, Sun, Moon } from 'lucide-react';
+import LogWorker from './workers/logProcessor.worker?worker';
 import './App.css';
 
 function App() {
   const [rawLogs, setRawLogs] = useState([]);
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState([]); // Enriched logs (full set)
+  const [displayLogs, setDisplayLogs] = useState([]); // Filtered and sorted logs for display
   const [fileName, setFileName] = useState(null);
   const [allPaths, setAllPaths] = useState([]);
 
@@ -22,6 +23,46 @@ function App() {
   const [pendingHeader, setPendingHeader] = useState(null);
   const [timeRange, setTimeRange] = useState({ start: '', end: '' });
   const [theme, setTheme] = useState('dark');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const workerRef = React.useRef(null);
+
+  // Initialize Worker
+  useEffect(() => {
+    workerRef.current = new LogWorker();
+
+    workerRef.current.onmessage = (e) => {
+      const { type, payload } = e.data;
+
+      if (type === 'LOGS_PROCESSED') {
+        setLogs(payload.logs);
+        setAllPaths(payload.paths);
+
+        // Initial column setup logic (moved from processLogs)
+        const paths = payload.paths;
+        const defaultCols = ['timestamp', 'action', 'httpRequest.clientIp', 'httpRequest.country', 'httpRequest.uri', 'header.Host', 'header.User-Agent'];
+        const initialDefaults = defaultCols.filter(col => paths.includes(col));
+        const excludedColumns = ['formatVersion', 'httpSourceId', 'httpSourceName', 'webaclId'];
+        const otherTopLevel = paths.filter(p => !p.includes('.') && !defaultCols.includes(p)).filter(p => !excludedColumns.includes(p));
+
+        setVisibleColumns(prev => {
+          if (prev.length === 0) {
+            return [...initialDefaults, ...otherTopLevel];
+          }
+          return prev;
+        });
+        setIsProcessing(false);
+      }
+      else if (type === 'FILTER_SORT_COMPLETE') {
+        setDisplayLogs(payload.logs);
+        setIsProcessing(false);
+      }
+    };
+
+    return () => {
+      workerRef.current.terminate();
+    };
+  }, []);
 
   // Apply theme to document
   useEffect(() => {
@@ -35,42 +76,36 @@ function App() {
   const handleFileUpload = (uploadedLogs, name) => {
     setRawLogs(uploadedLogs);
     setFileName(name);
-    // Initial processing will be triggered by useEffect or we do it here
-    processLogs(uploadedLogs, customHeaders);
-  };
-
-  const processLogs = (sourceLogs, headers) => {
-    const enrichedLogs = enrichLogs(sourceLogs, headers);
-    setLogs(enrichedLogs);
-
-    // Extract paths from enriched logs
-    const paths = getAllPaths(enrichedLogs);
-    setAllPaths(paths);
-
-    // Default visible columns (try to pick meaningful ones)
-    const defaultCols = ['timestamp', 'action', 'httpRequest.clientIp', 'httpRequest.country', 'httpRequest.uri', 'header.Host', 'header.User-Agent'];
-
-    // Select default columns in order if they exist
-    const initialDefaults = defaultCols.filter(col => paths.includes(col));
-    // Add other top-level fields not in defaultCols
-    const excludedColumns = ['formatVersion', 'httpSourceId', 'httpSourceName', 'webaclId'];
-    const otherTopLevel = paths.filter(p => !p.includes('.') && !defaultCols.includes(p)).filter(p => !excludedColumns.includes(p));
-
-    // Only set visible columns if it's the first load (empty)
-    if (visibleColumns.length === 0) {
-      setVisibleColumns([...initialDefaults, ...otherTopLevel]);
-    }
+    setIsProcessing(true);
+    workerRef.current.postMessage({
+      type: 'PROCESS_LOGS',
+      payload: { rawLogs: uploadedLogs, customHeaders }
+    });
   };
 
   // Re-process when customHeaders changes
   useEffect(() => {
     if (rawLogs.length > 0) {
-      const enrichedLogs = enrichLogs(rawLogs, customHeaders);
-      setLogs(enrichedLogs);
-      const paths = getAllPaths(enrichedLogs);
-      setAllPaths(paths);
+      setIsProcessing(true);
+      workerRef.current.postMessage({
+        type: 'PROCESS_LOGS',
+        payload: { rawLogs, customHeaders }
+      });
     }
   }, [customHeaders, rawLogs]);
+
+  // Filter and Sort when dependencies change
+  useEffect(() => {
+    if (logs.length > 0) {
+      // setIsProcessing(true); // Optional: might cause flicker for fast updates
+      workerRef.current.postMessage({
+        type: 'FILTER_AND_SORT',
+        payload: { logs, filters, sortConfig, timeRange }
+      });
+    } else {
+      setDisplayLogs([]);
+    }
+  }, [logs, filters, sortConfig, timeRange]);
 
   // Auto-add pending header to visible columns once paths are updated
   useEffect(() => {
@@ -124,49 +159,7 @@ function App() {
     } else {
       setFilters([]);
     }
-
-    // Note: The limit is handled by the grouping display in LogTable
-    // We could add a separate limit state if needed
   };
-
-  const processedLogs = useMemo(() => {
-    let result = filterLogs(logs, filters);
-
-    // Apply time range filter
-    if (timeRange.start || timeRange.end) {
-      result = result.filter(log => {
-        const timestamp = log.timestamp;
-        if (!timestamp) return true; // Keep logs without timestamp
-
-        // Convert timestamp to milliseconds if needed
-        let ts = Number(timestamp);
-        // If timestamp is in seconds (10 digits or less), convert to milliseconds
-        if (ts < 10000000000) ts *= 1000;
-
-        if (timeRange.start) {
-          // Parse the datetime-local input as UTC
-          const startDateUTC = new Date(timeRange.start + 'Z'); // Append 'Z' to treat as UTC
-          const startTime = startDateUTC.getTime();
-          if (ts < startTime) return false;
-        }
-
-        if (timeRange.end) {
-          // Parse the datetime-local input as UTC
-          const endDateUTC = new Date(timeRange.end + 'Z'); // Append 'Z' to treat as UTC
-          const endTime = endDateUTC.getTime();
-          if (ts > endTime) return false;
-        }
-
-        return true;
-      });
-    }
-
-    if (sortConfig.field) {
-      result = sortLogs(result, sortConfig.field, sortConfig.direction);
-    }
-
-    return result;
-  }, [logs, filters, sortConfig, timeRange]);
 
   const handleSort = (field) => {
     setSortConfig(prev => ({
@@ -229,7 +222,7 @@ function App() {
             />
 
             <LogTable
-              logs={processedLogs}
+              logs={displayLogs}
               visibleColumns={visibleColumns}
               sortConfig={sortConfig}
               onSort={handleSort}
